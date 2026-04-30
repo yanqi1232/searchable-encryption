@@ -191,13 +191,14 @@ public class UploadPanelController {
         }
 
         final List<Path> filesToUpload = new ArrayList<>(selectedFilePaths);
+        final String textDocId = docIdField.getText().trim();
         busyStateManager.setUploadBusy(true, initialUploadStatus(filesToUpload));
         // SwingWorker 在后台线程执行加密和网络上传，done/process 回到 EDT 更新界面。
         new SwingWorker<UploadTaskResult, String>() {
             @Override
             protected UploadTaskResult doInBackground() {
                 try {
-                    return performUpload(description, plainTextContent, filesToUpload, status -> publish(status));
+                    return performUpload(textDocId, description, plainTextContent, filesToUpload, status -> publish(status));
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     return UploadTaskResult.error("Upload failed: " + DocumentOperationService.describeException(ex));
@@ -246,6 +247,7 @@ public class UploadPanelController {
      * 根据当前选择执行纯文本上传或批量文件上传。
      */
     private UploadTaskResult performUpload(
+            String textDocId,
             String description,
             String plainTextContent,
             List<Path> filesToUpload,
@@ -254,7 +256,7 @@ public class UploadPanelController {
         if (filesToUpload.isEmpty()) {
             // 未选择文件时，把文本框内容当作一个 text/plain 文档上传。
             statusUpdater.accept("Encrypting and uploading text content...");
-            String docId = docIdField.getText().trim();
+            String docId = textDocId;
             DocumentOperationService.UploadContent uploadContent = operationService.resolveTextUploadContent(docId, plainTextContent);
             ServerResponse response = uploadSingleDocument(docId, uploadContent, description);
             return new UploadTaskResult(

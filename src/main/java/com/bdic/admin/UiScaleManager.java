@@ -74,6 +74,16 @@ public final class UiScaleManager {
         }
     }
 
+    public static void reapplyCurrentScale(JFrame frame, Component root) {
+        if (frame == null || frame.getRootPane() == null || root == null) {
+            return;
+        }
+        Object managerValue = frame.getRootPane().getClientProperty(MANAGER_KEY);
+        if (managerValue instanceof UiScaleManager manager) {
+            manager.applyCurrentScale(root);
+        }
+    }
+
     /**
      * 按当前窗口大小重新计算比例，并递归缩放窗口内组件。
      */
@@ -82,6 +92,16 @@ public final class UiScaleManager {
         scaleRecursively(frame.getRootPane(), scale);
         frame.revalidate();
         frame.repaint();
+    }
+
+    /**
+     * 只缩放指定的动态子树，避免搜索结果等局部刷新时重算整个窗口。
+     */
+    private void applyCurrentScale(Component root) {
+        double scale = calculateScale(frame.getWidth(), frame.getHeight());
+        scaleRecursively(root, scale);
+        root.revalidate();
+        root.repaint();
     }
 
     /**

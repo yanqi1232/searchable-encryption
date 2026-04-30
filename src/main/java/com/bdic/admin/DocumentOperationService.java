@@ -386,12 +386,7 @@ public class DocumentOperationService {
         }
 
         // 旧文档没有保存关键词元数据，只能让用户手动输入原始关键词。
-        String keywordsInput = JOptionPane.showInputDialog(
-                parent,
-                "This legacy document has no stored keyword metadata.\nPlease enter the original keywords separated by commas:",
-                "Rebuild Index",
-                JOptionPane.PLAIN_MESSAGE
-        );
+        String keywordsInput = requestLegacyKeywords(parent);
         if (keywordsInput == null || keywordsInput.isBlank()) {
             return null;
         }
@@ -399,6 +394,36 @@ public class DocumentOperationService {
                 .map(String::trim)
                 .filter(keyword -> !keyword.isEmpty())
                 .toArray(String[]::new);
+    }
+
+    /**
+     * 旧文档需要人工补关键词时，确保输入框始终在 Swing 事件线程中显示。
+     */
+    private String requestLegacyKeywords(Component parent) throws Exception {
+        if (SwingUtilities.isEventDispatchThread()) {
+            return showLegacyKeywordInput(parent);
+        }
+
+        final String[] input = new String[1];
+        try {
+            SwingUtilities.invokeAndWait(() -> input[0] = showLegacyKeywordInput(parent));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        }
+        return input[0];
+    }
+
+    /**
+     * 显示旧文档关键词输入框。
+     */
+    private String showLegacyKeywordInput(Component parent) {
+        return JOptionPane.showInputDialog(
+                parent,
+                "This legacy document has no stored keyword metadata.\nPlease enter the original keywords separated by commas:",
+                "Rebuild Index",
+                JOptionPane.PLAIN_MESSAGE
+        );
     }
 
     /**
